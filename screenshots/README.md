@@ -1,30 +1,57 @@
 # Screenshot Evidence
 
-Screenshots in this project are evidence of configuration, troubleshooting, root-cause analysis, and verification — not a record of every installation click.
+Screenshots in this repository are selected as technical evidence. The goal is to prove configuration, validation, troubleshooting, and remediation — not to document every installation click.
 
-## Phase 1 Planned Evidence
+## Phase 1 Evidence Set
 
-1. `01-dc01-server-installed.png` — DC01 / Server Manager after installation and rename
-2. `02-dc01-static-network.png` — DC01 static IPv4 and DNS configuration
-3. `03-ad-ds-dns-installed.png` — Server Manager showing installed infrastructure roles
-4. `04-corp-lab-dns-zone.png` — DNS Manager showing the `corp.lab` zone
-5. `05-active-directory-ou-structure.png` — AD organizational-unit structure
-6. `06-ad-users-and-groups.png` — Sanitized test users and security groups
-7. `07-dhcp-scope.png` — DHCP scope configuration
-8. `08-client-network-dhcp.png` — WIN11-01 DHCP/DNS configuration
-9. `09-win11-domain-joined.png` — Domain-joined workstation evidence
-10. `10-domain-user-authentication.png` — `whoami` / logon-server verification
-11. `11-workstation-gpo.png` — GPO linked to workstation OU
-12. `12-gpo-verification.png` — `gpresult` evidence of applied policy
+The Phase 1 evidence demonstrates the progression from a standalone Windows Server to a functioning domain environment with DHCP, DNS, domain authentication, and Group Policy.
+
+1. `01-dc01-server-installed.png` — verifies the Windows Server hostname `DC01`
+2. `02-dc01-static-network.png` — verifies static `10.10.10.10/24` addressing and DNS configuration
+3. `03-ad-ds-dns-installed.png` — shows AD DS and DNS roles available on DC01
+4. `04-corp-lab-dns-zone.png` — shows the AD-integrated `corp.lab` DNS zone
+5. `05-active-directory-ou-structure.png` — shows the custom OU hierarchy for users, workstations, servers, and groups
+6. `06-ad-security-groups.png` — shows `GG-Finance`, `GG-IT`, and `GG-Sales` Global Security groups
+7. `07-dhcp-scope.png` — shows the active `10.10.10.100-199` Windows DHCP scope
+8. `08-client-network-dhcp.png` — verifies that `WIN11-01` received `10.10.10.100` from DHCP server `10.10.10.10`, uses DNS `10.10.10.10`, and received the `corp.lab` DNS suffix
+9. `09-win11-domain-joined.png` — shows `WIN11-01` inside `CORP-Workstations`
+10. `10-domain-user-authentication.png` — verifies `corp\amorgan`, logon server `\\DC01`, and `CORP\GG-Finance` membership
+11. `11-workstation-gpo.png` — shows the workstation Group Policy configuration
+12. `12-gpo-verification.png` — `gpresult` confirms the workstation baseline GPO was applied from `DC01.corp.lab`
+13. `13-gpo-logon-notice.png` — visible end-user verification of the enforced logon notice
+
+## Why `08-client-network-dhcp.png` Matters
+
+This screenshot provides an important end-to-end validation point. Rather than manually assigning the client configuration, the workstation received it from the Windows Server DHCP service:
+
+```text
+WIN11-01
+  IPv4:       10.10.10.100
+  DHCP:       10.10.10.10
+  DNS:        10.10.10.10
+  DNS suffix: corp.lab
+```
+
+That proves the Windows Server DHCP scope and options are functioning and gives the client the DNS configuration required for Active Directory operations.
+
+## Phase 2 Evidence Standard
+
+Incident screenshots will be grouped by incident and will normally include only:
+
+1. **Symptom / failed state**
+2. **Diagnostic evidence / root cause**
+3. **Post-remediation verification**
+
+This keeps the repository readable and makes each incident understandable to someone reviewing the project without access to the lab.
 
 ## Security Rules
 
 Never include:
 - passwords
 - product keys
-- API keys/tokens
+- API keys or tokens
 - personal email addresses
-- private IP information unrelated to this isolated lab
-- unrelated personal files or browser tabs
+- private information unrelated to the isolated lab
+- unrelated host files, browser tabs, or account information
 
-Later phases will prioritize before/after evidence for actual incidents and automated troubleshooting.
+Evidence should be sanitized before publication.
