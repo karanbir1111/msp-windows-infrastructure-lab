@@ -104,8 +104,6 @@ Domain authentication was then validated using the Finance test account `CORP\am
 
 ![Domain user authentication](screenshots/10-domain-user-authentication.png)
 
-This demonstrates not only a successful domain join, but also working domain authentication and expected authorization-group membership.
-
 ### 5. Group Policy
 
 A workstation GPO named `CORP Workstation Security Baseline` was configured and linked to `CORP-Workstations`.
@@ -122,33 +120,46 @@ A legal logon notice provided visible end-user confirmation that the Group Polic
 
 ### 6. Recovery Baseline
 
-Healthy-state VirtualBox snapshots were created for both VMs after AD DS, DNS, DHCP, domain authentication, and Group Policy were verified. This allows later troubleshooting scenarios to be introduced safely while preserving a known-good recovery point.
+Healthy-state VirtualBox snapshots were created for both VMs after AD DS, DNS, DHCP, domain authentication, and Group Policy were verified. This preserves a known-good recovery point before deliberate incident simulation.
 
 ## Phase 2 — MSP Incident Simulation 🔧
 
-Phase 2 uses realistic support tickets to practice structured troubleshooting from symptom to root cause.
+### INC-001 — Active Directory Account Lockout ✅
 
-### INC-001 — Active Directory Account Lockout
+A Finance user was unable to sign in after repeated incorrect password attempts. The incident was handled as a structured service-desk case rather than a one-click account change.
 
-The first incident simulates a Finance user being unable to sign in after repeated invalid password attempts. The workflow includes:
+The user-facing symptom was an account-lockout message on `WIN11-01`:
 
-- confirming workstation connectivity and domain reachability,
-- checking the user's Active Directory state,
-- distinguishing an enabled account from a locked account,
-- manually unlocking the user after validation,
-- verifying successful authentication from `WIN11-01`, and
-- identifying the workflow as a future PowerShell diagnostic/remediation opportunity.
+![Account lockout symptom](screenshots/incidents/INC-001-account-lockout/01-account-locked.png)
 
-The incident documentation is being maintained under `incidents/INC-001-account-lockout/`. Supporting incident screenshots will be added once the before/after evidence set is finalized.
+Active Directory was then queried with PowerShell. The account remained enabled, while `LockedOut` returned `True`, isolating the issue to the account-lockout state rather than an account-disablement or broader domain problem.
+
+![PowerShell lockout diagnosis](screenshots/incidents/INC-001-account-lockout/02-powershell.png)
+
+After identity validation, the account was manually unlocked. A repeat query showed the state transition from `LockedOut = True` to `LockedOut = False`.
+
+![Account state before and after unlock](screenshots/incidents/INC-001-account-lockout/04_After_unlocking.png)
+
+The remediation was closed only after successful end-user verification on `WIN11-01`:
+
+![Successful login after remediation](screenshots/incidents/INC-001-account-lockout/03.png)
+
+**Root cause:** the user exceeded the domain's invalid-logon threshold.  
+**Resolution:** manually unlock the Active Directory account after validation.  
+**Verification:** confirm `LockedOut = False` and successful domain sign-in.  
+**Automation opportunity:** build a PowerShell user-diagnostic workflow that checks account existence, enabled state, lockout state, password status, and later offers controlled remediation.
+
+Full case study: [`incidents/INC-001-account-lockout/README.md`](incidents/INC-001-account-lockout/README.md)
 
 ## Project Roadmap
 
 1. **Infrastructure Baseline** — ✅ Complete
-2. **Incident Simulation** — 🔧 In progress
-3. **Root-Cause Documentation** — 🔧 In progress
-4. **PowerShell Diagnostics** — Planned
-5. **Controlled Remediation** — Planned
-6. **Ticket-Style Reporting / Knowledge Base** — Planned
+2. **INC-001: AD Account Lockout** — ✅ Complete
+3. **INC-002: DNS / Name Resolution Failure** — Next
+4. **Additional Incident Simulation** — Planned
+5. **PowerShell Diagnostics** — Planned
+6. **Controlled Remediation** — Planned
+7. **Ticket-Style Reporting / Knowledge Base** — Planned
 
 ## Repository Structure
 
