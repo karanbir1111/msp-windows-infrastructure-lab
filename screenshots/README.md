@@ -13,11 +13,11 @@ The Phase 1 evidence demonstrates the progression from a standalone Windows Serv
 5. `05-active-directory-ou-structure.png` — shows the custom OU hierarchy for users, workstations, servers, and groups
 6. `06-ad-security-groups.png` — shows `GG-Finance`, `GG-IT`, and `GG-Sales` Global Security groups
 7. `07-dhcp-scope.png` — shows the active `10.10.10.100-199` Windows DHCP scope
-8. `08-client-network-dhcp.png` — verifies that `WIN11-01` received `10.10.10.100` from DHCP server `10.10.10.10`, uses DNS `10.10.10.10`, and received the `corp.lab` DNS suffix
+8. `08-client-network-dhcp.png` — verifies that `WIN11-01` received its address and domain DNS configuration from `DC01`
 9. `09-win11-domain-joined.png` — shows `WIN11-01` inside `CORP-Workstations`
-10. `10-domain-user-authentication.png` — verifies `corp\amorgan`, logon server `\\DC01`, and `CORP\GG-Finance` membership
+10. `10-domain-user-authentication.png` — verifies `corp\amorgan`, logon server `\\DC01`, and expected group membership
 11. `11-workstation-gpo.png` — shows the workstation Group Policy configuration
-12. `12-gpo-verification.png` — `gpresult` confirms the workstation baseline GPO was applied from `DC01.corp.lab`
+12. `12-gpo-verification.png` — confirms the workstation baseline GPO was applied from `DC01.corp.lab`
 13. `13-gpo-logon-notice.png` — visible end-user verification of the enforced logon notice
 
 ## Phase 2 Incident Evidence
@@ -31,26 +31,25 @@ Location: `screenshots/incidents/INC-001-account-lockout/`
 - `04_After_unlocking.png` — before/after comparison showing `LockedOut` change from `True` to `False`
 - `03.png` — successful post-remediation login confirmed with `whoami = corp\amorgan`
 
-These four images represent the full troubleshooting lifecycle: **symptom → diagnosis → remediation state change → end-user verification**.
+### INC-002 — DNS Misconfiguration / Name-Resolution Failure
 
-## Evidence Standard for Future Incidents
+Location: `screenshots/incidents/INC-002-dns-failure/`
 
-Incident screenshots should normally include only:
+- `01-wrong-dns-config.png` — shows the client using `8.8.8.8` instead of the domain DNS server
+- `02-ip-works-name-fails.png` — proves IP connectivity to `DC01` works while DNS resolution fails
+- `03-ad-srv-lookup-fails.png` — demonstrates Active Directory SRV discovery failure
+- `04-dns-restored-verified.png` — shows DNS restored to `10.10.10.10` with successful resolution
 
-1. **Symptom / failed state**
-2. **Diagnostic evidence / root cause**
-3. **Post-remediation verification**
+Together, the incident evidence follows the same lifecycle: **symptom → diagnosis → root cause → remediation → verification**.
 
-Additional evidence is included only when it materially improves the technical story.
+## Repository Convention
+
+Incident case-study documentation lives under `incidents/INC-XXX-.../README.md`.
+
+Visual evidence lives separately under `screenshots/incidents/INC-XXX-.../`.
+
+This keeps the repository easy to browse while allowing each case study to embed its screenshots directly.
 
 ## Security Rules
 
-Never include:
-- passwords
-- product keys
-- API keys or tokens
-- personal email addresses
-- private information unrelated to the isolated lab
-- unrelated host files, browser tabs, or account information
-
-Evidence should be sanitized before publication.
+Never include passwords, product keys, API keys, personal email addresses, unrelated private information, or unrelated host files/browser tabs. Evidence should be sanitized before publication.
