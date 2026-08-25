@@ -20,29 +20,28 @@ The Phase 1 evidence demonstrates the progression from a standalone Windows Serv
 12. `12-gpo-verification.png` — `gpresult` confirms the workstation baseline GPO was applied from `DC01.corp.lab`
 13. `13-gpo-logon-notice.png` — visible end-user verification of the enforced logon notice
 
-## Why `08-client-network-dhcp.png` Matters
+## Phase 2 Incident Evidence
 
-This screenshot provides an important end-to-end validation point. Rather than manually assigning the client configuration, the workstation received it from the Windows Server DHCP service:
+### INC-001 — Active Directory Account Lockout
 
-```text
-WIN11-01
-  IPv4:       10.10.10.100
-  DHCP:       10.10.10.10
-  DNS:        10.10.10.10
-  DNS suffix: corp.lab
-```
+Location: `screenshots/incidents/INC-001-account-lockout/`
 
-That proves the Windows Server DHCP scope and options are functioning and gives the client the DNS configuration required for Active Directory operations.
+- `01-account-locked.png` — end-user lockout message on `WIN11-01`
+- `02-powershell.png` — PowerShell confirms `Enabled = True` and `LockedOut = True`
+- `04_After_unlocking.png` — before/after comparison showing `LockedOut` change from `True` to `False`
+- `03.png` — successful post-remediation login confirmed with `whoami = corp\amorgan`
 
-## Phase 2 Evidence Standard
+These four images represent the full troubleshooting lifecycle: **symptom → diagnosis → remediation state change → end-user verification**.
 
-Incident screenshots will be grouped by incident and will normally include only:
+## Evidence Standard for Future Incidents
+
+Incident screenshots should normally include only:
 
 1. **Symptom / failed state**
 2. **Diagnostic evidence / root cause**
 3. **Post-remediation verification**
 
-This keeps the repository readable and makes each incident understandable to someone reviewing the project without access to the lab.
+Additional evidence is included only when it materially improves the technical story.
 
 ## Security Rules
 
