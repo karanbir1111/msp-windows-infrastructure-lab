@@ -40,6 +40,15 @@ Location: `screenshots/incidents/INC-002-dns-failure/`
 - `03-ad-srv-lookup-fails.png` — demonstrates Active Directory SRV discovery failure
 - `04-dns-restored-verified.png` — shows DNS restored to `10.10.10.10` with successful resolution
 
+### INC-003 — DHCP Failure / APIPA
+
+Location: `screenshots/incidents/INC-003-dhcp-apipa/`
+
+- `01-apipa-address.png` — shows `WIN11-01` self-assigned an APIPA address after DHCP lease acquisition failed
+- `02-apipa-no-dc-connectivity.png` — shows the APIPA state and loss of connectivity to `DC01`
+- `03-dhcp-scope-inactive.png` — identifies the inactive `Corporate Workstations` scope on `DC01`
+- `04-dhcp-restored-verified.png` — verifies a valid DHCP lease and restored connectivity after scope reactivation
+
 Together, the incident evidence follows the same lifecycle: **symptom → diagnosis → root cause → remediation → verification**.
 
 ## Repository Convention
