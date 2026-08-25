@@ -1,36 +1,36 @@
 # Incident Case Studies
 
-This directory will contain realistic MSP-style infrastructure incidents introduced after the healthy Phase 1 baseline is complete.
+This directory contains realistic MSP-style Windows infrastructure incidents introduced after the healthy Phase 1 baseline was established.
 
-Each incident will use the following structure:
+Each case study follows the same operational structure:
 
-## Incident
-**ID:** INC-XXX  
-**Reported issue:**  
-**Affected system/user:**
+**Problem → Symptoms → Investigation → Root Cause → Resolution → Verification → Automation Opportunity**
 
-## Symptoms
+## Completed Incidents
 
-## Initial Hypotheses
+### INC-001 — Active Directory Account Lockout ✅
 
-## Investigation
-Document checks in the order they were performed and explain why each check was relevant.
+A Finance user was unable to sign in after exceeding the domain invalid-logon threshold. The incident demonstrates account-state diagnosis, manual Active Directory remediation, and end-user verification.
 
-## Root Cause
+Case study: [`INC-001-account-lockout/README.md`](INC-001-account-lockout/README.md)
 
-## Resolution
+### INC-002 — DNS Misconfiguration / Name-Resolution Failure ✅
 
-## Verification
-Demonstrate that the original issue is resolved rather than assuming the remediation worked.
+A domain workstation retained IP connectivity to `DC01` but could not resolve internal names because its DNS client was pointed to a public resolver. The incident demonstrates fault-domain isolation, Active Directory DNS dependencies, SRV-record validation, remediation, and verification.
 
-## Preventive / Automation Opportunity
-Identify whether any diagnostic or remediation step is repetitive, safe, and suitable for PowerShell automation.
+Case study: [`INC-002-dns-failure/README.md`](INC-002-dns-failure/README.md)
 
-## Planned Scenarios
+## Planned Incidents
 
-- Active Directory account lockout
-- DNS misconfiguration / name-resolution failure
-- DHCP address-assignment failure
-- Group Policy application failure
-- File-share / group-permission issue
-- Windows service or connectivity issue
+- INC-003 — DHCP failure / APIPA
+- INC-004 — Group Policy application failure
+- INC-005 — File-share / group-permission issue
+- Windows service or connectivity incident
+
+## Evidence Convention
+
+Incident documentation is stored here under `incidents/INC-XXX-.../`.
+
+Screenshots are stored separately under `screenshots/incidents/INC-XXX-.../` and embedded into the corresponding case study.
+
+This separation keeps troubleshooting documentation readable while maintaining a clean evidence library.
