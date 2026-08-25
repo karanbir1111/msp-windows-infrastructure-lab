@@ -41,7 +41,7 @@ The goal is not simply to install Active Directory. The lab is built around a su
 
 A functioning Windows domain environment has been built, validated, and preserved as a known-good baseline before incident simulation.
 
-### 1. Domain Controller and Core Services
+### Domain Controller and Core Services
 
 `DC01` was configured with a static `10.10.10.10/24` address and promoted as the first domain controller for `corp.lab`. The server also hosts Active Directory-integrated DNS and the Windows DHCP service.
 
@@ -51,7 +51,7 @@ The `corp.lab` DNS zone is hosted on `DC01`, providing the name-resolution found
 
 ![corp.lab DNS zone](screenshots/04-corp-lab-dns-zone.png)
 
-### 2. Active Directory Organization
+### Active Directory Organization
 
 The directory was organized into purpose-specific OUs for users, workstations, servers, and security groups.
 
@@ -72,102 +72,118 @@ corp.lab
 
 ![Active Directory OU structure](screenshots/05-active-directory-ou-structure.png)
 
-Departmental Global Security groups were created to support authorization, future file-share permissions, and incident scenarios.
-
 ![Active Directory security groups](screenshots/06-ad-security-groups.png)
 
-### 3. DHCP and Client Network Configuration
+### DHCP and Client Network Configuration
 
 Windows Server DHCP was authorized in Active Directory and configured with the workstation scope `10.10.10.100-199`.
 
 ![Windows DHCP scope](screenshots/07-dhcp-scope.png)
 
-`WIN11-01` then received its configuration dynamically from `DC01`, rather than being manually assigned:
-
-- IPv4 address: `10.10.10.100`
-- Subnet mask: `255.255.255.0`
-- DHCP server: `10.10.10.10`
-- DNS server: `10.10.10.10`
-- DNS suffix: `corp.lab`
+`WIN11-01` received its network configuration dynamically from `DC01`, including domain DNS.
 
 ![WIN11-01 DHCP and DNS configuration](screenshots/08-client-network-dhcp.png)
 
-This is an important validation point because it proves that the Windows DHCP service is providing the client configuration required for domain communication and DNS-based Active Directory discovery.
+### Domain Join and Authentication
 
-### 4. Domain Join and Authentication
-
-`WIN11-01` was joined to `corp.lab` and moved into the `CORP-Workstations` OU.
+`WIN11-01` was joined to `corp.lab` and moved into `CORP-Workstations`.
 
 ![WIN11-01 domain joined](screenshots/09-win11-domain-joined.png)
 
-Domain authentication was then validated using the Finance test account `CORP\amorgan`. The workstation authenticated against `\\DC01`, and the user's `CORP\GG-Finance` membership appeared in the Windows security token.
+Domain authentication was validated using the Finance test account `CORP\amorgan` against `\\DC01` with expected security-group membership.
 
 ![Domain user authentication](screenshots/10-domain-user-authentication.png)
 
-### 5. Group Policy
+### Group Policy
 
-A workstation GPO named `CORP Workstation Security Baseline` was configured and linked to `CORP-Workstations`.
+A workstation GPO named `CORP Workstation Security Baseline` was linked to `CORP-Workstations`.
 
 ![Workstation GPO configuration](screenshots/11-workstation-gpo.png)
 
-`gpresult /scope computer /r` confirmed that the policy was applied to `WIN11-01` from `DC01.corp.lab`.
+`gpresult` confirmed the policy was applied from `DC01.corp.lab`, and a legal logon notice provided visible end-user verification.
 
 ![GPO verification](screenshots/12-gpo-verification.png)
 
-A legal logon notice provided visible end-user confirmation that the Group Policy setting was actually enforced.
-
 ![GPO logon notice](screenshots/13-gpo-logon-notice.png)
 
-### 6. Recovery Baseline
-
-Healthy-state VirtualBox snapshots were created for both VMs after AD DS, DNS, DHCP, domain authentication, and Group Policy were verified. This preserves a known-good recovery point before deliberate incident simulation.
+Healthy-state VirtualBox snapshots were created for both VMs before deliberate incident simulation.
 
 ## Phase 2 — MSP Incident Simulation 🔧
 
 ### INC-001 — Active Directory Account Lockout ✅
 
-A Finance user was unable to sign in after repeated incorrect password attempts. The incident was handled as a structured service-desk case rather than a one-click account change.
-
-The user-facing symptom was an account-lockout message on `WIN11-01`:
+A Finance user was unable to sign in after repeated incorrect password attempts.
 
 ![Account lockout symptom](screenshots/incidents/INC-001-account-lockout/01-account-locked.png)
 
-Active Directory was then queried with PowerShell. The account remained enabled, while `LockedOut` returned `True`, isolating the issue to the account-lockout state rather than an account-disablement or broader domain problem.
+PowerShell confirmed the account was still enabled but had `LockedOut = True`, isolating the issue to the lockout state.
 
 ![PowerShell lockout diagnosis](screenshots/incidents/INC-001-account-lockout/02-powershell.png)
 
-After identity validation, the account was manually unlocked. A repeat query showed the state transition from `LockedOut = True` to `LockedOut = False`.
+After remediation, the account state changed to unlocked and the user successfully authenticated again.
 
-![Account state before and after unlock](screenshots/incidents/INC-001-account-lockout/04_After_unlocking.png)
-
-The remediation was closed only after successful end-user verification on `WIN11-01`:
+![Account state after unlock](screenshots/incidents/INC-001-account-lockout/04_After_unlocking.png)
 
 ![Successful login after remediation](screenshots/incidents/INC-001-account-lockout/03.png)
 
-**Root cause:** the user exceeded the domain's invalid-logon threshold.  
-**Resolution:** manually unlock the Active Directory account after validation.  
-**Verification:** confirm `LockedOut = False` and successful domain sign-in.  
-**Automation opportunity:** build a PowerShell user-diagnostic workflow that checks account existence, enabled state, lockout state, password status, and later offers controlled remediation.
+**Root cause:** the user exceeded the domain invalid-logon threshold.  
+**Resolution:** manually unlock the account after validation.  
+**Verification:** confirm `LockedOut = False` and successful sign-in.  
+**Automation opportunity:** build a PowerShell user-diagnostic workflow for account state and controlled remediation.
 
 Full case study: [`incidents/INC-001-account-lockout/README.md`](incidents/INC-001-account-lockout/README.md)
+
+### INC-002 — DNS Misconfiguration / Name-Resolution Failure ✅
+
+`WIN11-01` retained valid IP connectivity but was intentionally configured to use `8.8.8.8` instead of the Active Directory DNS server `10.10.10.10`.
+
+![Wrong DNS configuration](screenshots/incidents/INC-002-dns-failure/01-wrong-dns-config.png)
+
+The workstation could still reach `DC01` by IP, while `DC01.corp.lab` failed to resolve. This isolated the problem to DNS rather than general network connectivity.
+
+![IP works while DNS fails](screenshots/incidents/INC-002-dns-failure/02-ip-works-name-fails.png)
+
+An Active Directory LDAP SRV lookup also failed, demonstrating that the misconfiguration affected domain service discovery, not only host-name resolution.
+
+![AD SRV lookup failure](screenshots/incidents/INC-002-dns-failure/03-ad-srv-lookup-fails.png)
+
+DNS was restored to DHCP-provided configuration, the resolver cache was flushed, the lease was refreshed, and internal DNS resolution succeeded again.
+
+![DNS restored and verified](screenshots/incidents/INC-002-dns-failure/04-dns-restored-verified.png)
+
+**Root cause:** the client was using a public resolver that had no knowledge of the private `corp.lab` namespace.  
+**Resolution:** restore DHCP-provided DNS (`10.10.10.10`) and refresh client DNS state.  
+**Verification:** confirm internal host lookup and AD SRV discovery succeed.  
+**Automation opportunity:** build a PowerShell network diagnostic that compares expected DNS configuration, tests DC reachability, resolves internal names, and checks AD SRV records.
+
+Full case study: [`incidents/INC-002-dns-failure/README.md`](incidents/INC-002-dns-failure/README.md)
 
 ## Project Roadmap
 
 1. **Infrastructure Baseline** — ✅ Complete
 2. **INC-001: AD Account Lockout** — ✅ Complete
-3. **INC-002: DNS / Name Resolution Failure** — Next
-4. **Additional Incident Simulation** — Planned
-5. **PowerShell Diagnostics** — Planned
-6. **Controlled Remediation** — Planned
-7. **Ticket-Style Reporting / Knowledge Base** — Planned
+3. **INC-002: DNS / Name Resolution Failure** — ✅ Complete
+4. **INC-003: DHCP Failure / APIPA** — Next
+5. **INC-004: Group Policy Failure** — Planned
+6. **INC-005: File-Share / Permission Issue** — Planned
+7. **PowerShell Diagnostics** — Planned
+8. **Controlled Remediation** — Planned
+9. **Ticket-Style Reporting / Knowledge Base** — Planned
 
 ## Repository Structure
 
-- `architecture/` — network and infrastructure diagrams
-- `documentation/` — build notes and technical explanations
-- `incidents/` — incident tickets, investigation, root cause, resolution, and verification
-- `powershell/` — diagnostic and remediation automation developed from proven manual workflows
-- `screenshots/` — sanitized visual evidence of configuration and troubleshooting
+```text
+msp-windows-infrastructure-lab/
+├── architecture/        # network and infrastructure diagrams
+├── documentation/       # build notes and technical explanations
+├── incidents/           # one README case study per incident
+├── powershell/          # future diagnostics and remediation automation
+└── screenshots/
+    ├── phase-1 evidence
+    └── incidents/       # visual evidence grouped by incident ID
+```
+
+Incident documentation and screenshot evidence are deliberately separated: `incidents/` explains the troubleshooting process, while `screenshots/incidents/` stores the visual evidence referenced by each case study.
 
 ## Documentation Philosophy
 
@@ -175,7 +191,7 @@ Every incident follows the same operational pattern:
 
 **Problem → Symptoms → Investigation → Root Cause → Resolution → Verification → Automation Opportunity**
 
-This keeps the repository focused on support engineering and troubleshooting rather than documenting every installation click.
+This keeps the repository focused on support engineering, root-cause analysis, and repeatable troubleshooting rather than documenting every installation click.
 
 ## Security
 
