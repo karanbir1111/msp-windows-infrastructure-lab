@@ -32,10 +32,15 @@ A domain-joined workstation stopped receiving its expected security baseline bec
 
 Case study: [`INC-004-gpo-failure/README.md`](INC-004-gpo-failure/README.md)
 
-## Planned Incidents
+### INC-005 — File Share / NTFS Permission Failure ✅
 
-- INC-005 — File-share / group-permission issue
-- Windows service or connectivity incident
+A Finance user could reach the server but was denied access to the departmental share because the user's current authorization state did not include the `GG-Finance` security group required by the NTFS ACL. The incident demonstrates SMB/NTFS permission troubleshooting, AD group-based access, security-token refresh, and end-user verification.
+
+Case study: [`INC-005-file-permissions/README.md`](INC-005-file-permissions/README.md)
+
+## Next Phase
+
+The incident set now provides manual troubleshooting examples across Active Directory accounts, DNS, DHCP, Group Policy, and file permissions. The next phase is to convert repeatable diagnostic checks into PowerShell tooling while keeping remediation controlled and auditable.
 
 ## Evidence Convention
 
