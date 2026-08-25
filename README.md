@@ -39,13 +39,21 @@ The goal is not simply to install Active Directory. The lab is built around a su
 
 ## Phase 1 — Healthy Infrastructure Baseline ✅
 
-A functioning domain environment has been built and validated.
+A functioning Windows domain environment has been built, validated, and preserved as a known-good baseline before incident simulation.
 
-### Windows Server / Domain Controller
+### 1. Domain Controller and Core Services
 
-`DC01` was configured with a static `10.10.10.10/24` address and promoted as the first domain controller for `corp.lab`. AD-integrated DNS is hosted on the same server.
+`DC01` was configured with a static `10.10.10.10/24` address and promoted as the first domain controller for `corp.lab`. The server also hosts Active Directory-integrated DNS and the Windows DHCP service.
 
-### Active Directory Structure
+![DC01 AD DS and DNS](screenshots/03-ad-ds-dns-installed.png)
+
+The `corp.lab` DNS zone is hosted on `DC01`, providing the name-resolution foundation required by Active Directory clients.
+
+![corp.lab DNS zone](screenshots/04-corp-lab-dns-zone.png)
+
+### 2. Active Directory Organization
+
+The directory was organized into purpose-specific OUs for users, workstations, servers, and security groups.
 
 ```text
 corp.lab
@@ -62,11 +70,19 @@ corp.lab
     └── GG-Sales
 ```
 
-Test users were created in department-specific OUs and assigned to corresponding Global Security groups. This provides a realistic foundation for later access-control and troubleshooting scenarios.
+![Active Directory OU structure](screenshots/05-active-directory-ou-structure.png)
 
-### DHCP and DNS Validation
+Departmental Global Security groups were created to support authorization, future file-share permissions, and incident scenarios.
 
-Windows Server DHCP was authorized in Active Directory and configured with the `10.10.10.100-199` workstation scope. `WIN11-01` successfully received:
+![Active Directory security groups](screenshots/06-ad-security-groups.png)
+
+### 3. DHCP and Client Network Configuration
+
+Windows Server DHCP was authorized in Active Directory and configured with the workstation scope `10.10.10.100-199`.
+
+![Windows DHCP scope](screenshots/07-dhcp-scope.png)
+
+`WIN11-01` then received its configuration dynamically from `DC01`, rather than being manually assigned:
 
 - IPv4 address: `10.10.10.100`
 - Subnet mask: `255.255.255.0`
@@ -74,23 +90,43 @@ Windows Server DHCP was authorized in Active Directory and configured with the `
 - DNS server: `10.10.10.10`
 - DNS suffix: `corp.lab`
 
-This validates the full client network-configuration path from the Windows DHCP service to the workstation.
+![WIN11-01 DHCP and DNS configuration](screenshots/08-client-network-dhcp.png)
 
-### Domain Authentication
+This is an important validation point because it proves that the Windows DHCP service is providing the client configuration required for domain communication and DNS-based Active Directory discovery.
 
-`WIN11-01` was joined to `corp.lab` and moved into `CORP-Workstations`. Domain authentication was validated using the Finance test account `CORP\amorgan`; the workstation authenticated against `\\DC01` and the user's `GG-Finance` group membership appeared in the Windows access token.
+### 4. Domain Join and Authentication
 
-### Group Policy
+`WIN11-01` was joined to `corp.lab` and moved into the `CORP-Workstations` OU.
 
-A workstation GPO named `CORP Workstation Security Baseline` was linked to `CORP-Workstations`. `gpresult` confirmed that the policy was received from `DC01.corp.lab`, and an interactive logon notice provided a visible verification that the policy was enforced on `WIN11-01`.
+![WIN11-01 domain joined](screenshots/09-win11-domain-joined.png)
 
-### Recovery Baseline
+Domain authentication was then validated using the Finance test account `CORP\amorgan`. The workstation authenticated against `\\DC01`, and the user's `CORP\GG-Finance` membership appeared in the Windows security token.
 
-Healthy-state VirtualBox snapshots were created for both VMs before beginning incident simulation. This preserves a known-good recovery point while allowing faults to be introduced safely.
+![Domain user authentication](screenshots/10-domain-user-authentication.png)
+
+This demonstrates not only a successful domain join, but also working domain authentication and expected authorization-group membership.
+
+### 5. Group Policy
+
+A workstation GPO named `CORP Workstation Security Baseline` was configured and linked to `CORP-Workstations`.
+
+![Workstation GPO configuration](screenshots/11-workstation-gpo.png)
+
+`gpresult /scope computer /r` confirmed that the policy was applied to `WIN11-01` from `DC01.corp.lab`.
+
+![GPO verification](screenshots/12-gpo-verification.png)
+
+A legal logon notice provided visible end-user confirmation that the Group Policy setting was actually enforced.
+
+![GPO logon notice](screenshots/13-gpo-logon-notice.png)
+
+### 6. Recovery Baseline
+
+Healthy-state VirtualBox snapshots were created for both VMs after AD DS, DNS, DHCP, domain authentication, and Group Policy were verified. This allows later troubleshooting scenarios to be introduced safely while preserving a known-good recovery point.
 
 ## Phase 2 — MSP Incident Simulation 🔧
 
-Phase 2 uses realistic support tickets to practice structured root-cause troubleshooting.
+Phase 2 uses realistic support tickets to practice structured troubleshooting from symptom to root cause.
 
 ### INC-001 — Active Directory Account Lockout
 
@@ -103,7 +139,7 @@ The first incident simulates a Finance user being unable to sign in after repeat
 - verifying successful authentication from `WIN11-01`, and
 - identifying the workflow as a future PowerShell diagnostic/remediation opportunity.
 
-Detailed incident evidence will be added as the screenshots are finalized.
+The incident documentation is being maintained under `incidents/INC-001-account-lockout/`. Supporting incident screenshots will be added once the before/after evidence set is finalized.
 
 ## Project Roadmap
 
@@ -120,15 +156,15 @@ Detailed incident evidence will be added as the screenshots are finalized.
 - `documentation/` — build notes and technical explanations
 - `incidents/` — incident tickets, investigation, root cause, resolution, and verification
 - `powershell/` — diagnostic and remediation automation developed from proven manual workflows
-- `screenshots/` — sanitized evidence of configuration and troubleshooting
+- `screenshots/` — sanitized visual evidence of configuration and troubleshooting
 
 ## Documentation Philosophy
 
-Every incident is documented using the same operational pattern:
+Every incident follows the same operational pattern:
 
 **Problem → Symptoms → Investigation → Root Cause → Resolution → Verification → Automation Opportunity**
 
-This keeps the repository focused on support engineering and troubleshooting rather than screenshots of installation wizards.
+This keeps the repository focused on support engineering and troubleshooting rather than documenting every installation click.
 
 ## Security
 
