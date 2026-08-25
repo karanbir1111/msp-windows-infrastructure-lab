@@ -26,9 +26,14 @@ A DHCP-enabled workstation failed to obtain a lease after its server-side scope 
 
 Case study: [`INC-003-dhcp-apipa/README.md`](INC-003-dhcp-apipa/README.md)
 
+### INC-004 — Group Policy Application Failure ✅
+
+A domain-joined workstation stopped receiving its expected security baseline because its computer object was moved outside the OU to which the GPO was linked. The incident demonstrates `gpresult` analysis, OU/GPO scope troubleshooting, Active Directory object placement, remediation, and endpoint verification.
+
+Case study: [`INC-004-gpo-failure/README.md`](INC-004-gpo-failure/README.md)
+
 ## Planned Incidents
 
-- INC-004 — Group Policy application failure
 - INC-005 — File-share / group-permission issue
 - Windows service or connectivity incident
 
