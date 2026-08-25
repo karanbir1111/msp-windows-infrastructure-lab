@@ -183,14 +183,35 @@ The scope was reactivated and the client lease was renewed. `WIN11-01` returned 
 
 Full case study: [`incidents/INC-003-dhcp-apipa/README.md`](incidents/INC-003-dhcp-apipa/README.md)
 
+### INC-004 — Group Policy Application Failure ✅
+
+`WIN11-01` remained domain-joined and reachable, but `gpresult` no longer showed the expected `CORP Workstation Security Baseline` GPO.
+
+![GPO missing from gpresult](screenshots/incidents/INC-004-gpo-failure/01-gpo-missing.png)
+
+Investigation showed that the `WIN11-01` computer object had been moved from `CORP-Workstations` into the default `Computers` container. Because the workstation GPO was linked to `CORP-Workstations`, the client was outside the policy's scope.
+
+![Computer object in wrong container](screenshots/incidents/INC-004-gpo-failure/02-computer-in-wrong-ou.png)
+
+The computer object was moved back into the correct OU, Group Policy was refreshed, and `gpresult` confirmed the workstation security baseline applied again.
+
+![GPO restored after remediation](screenshots/incidents/INC-004-gpo-failure/03-gpo-restored.png)
+
+**Root cause:** `WIN11-01` was outside the OU to which the workstation GPO was linked.  
+**Resolution:** move the computer object back to `CORP-Workstations`, refresh policy, and restart the client.  
+**Verification:** confirm `CORP Workstation Security Baseline` appears again in `gpresult`.  
+**Automation opportunity:** build a PowerShell diagnostic that checks a computer's distinguished name/current OU and compares it with expected management scope.
+
+Full case study: [`incidents/INC-004-gpo-failure/README.md`](incidents/INC-004-gpo-failure/README.md)
+
 ## Project Roadmap
 
 1. **Infrastructure Baseline** — ✅ Complete
 2. **INC-001: AD Account Lockout** — ✅ Complete
 3. **INC-002: DNS / Name Resolution Failure** — ✅ Complete
 4. **INC-003: DHCP Failure / APIPA** — ✅ Complete
-5. **INC-004: Group Policy Failure** — Next
-6. **INC-005: File-Share / Permission Issue** — Planned
+5. **INC-004: Group Policy Failure** — ✅ Complete
+6. **INC-005: File-Share / Permission Issue** — Next
 7. **PowerShell Diagnostics** — Planned
 8. **Controlled Remediation** — Planned
 9. **Ticket-Style Reporting / Knowledge Base** — Planned
