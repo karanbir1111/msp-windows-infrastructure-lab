@@ -49,6 +49,14 @@ Location: `screenshots/incidents/INC-003-dhcp-apipa/`
 - `03-dhcp-scope-inactive.png` — identifies the inactive `Corporate Workstations` scope on `DC01`
 - `04-dhcp-restored-verified.png` — verifies a valid DHCP lease and restored connectivity after scope reactivation
 
+### INC-004 — Group Policy Application Failure
+
+Location: `screenshots/incidents/INC-004-gpo-failure/`
+
+- `01-gpo-missing.png` — `gpresult` shows the expected workstation baseline is no longer applied
+- `02-computer-in-wrong-ou.png` — identifies `WIN11-01` in the default `Computers` container instead of `CORP-Workstations`
+- `03-gpo-restored.png` — confirms the workstation GPO applies again after the computer is returned to the correct OU and policy is refreshed
+
 Together, the incident evidence follows the same lifecycle: **symptom → diagnosis → root cause → remediation → verification**.
 
 ## Repository Convention
