@@ -20,9 +20,14 @@ A domain workstation retained IP connectivity to `DC01` but could not resolve in
 
 Case study: [`INC-002-dns-failure/README.md`](INC-002-dns-failure/README.md)
 
+### INC-003 — DHCP Failure / APIPA ✅
+
+A DHCP-enabled workstation failed to obtain a lease after its server-side scope was deactivated and fell back to a `169.254.x.x` APIPA address. The incident demonstrates DHCP troubleshooting, APIPA interpretation, server-side root-cause analysis, lease recovery, and connectivity verification.
+
+Case study: [`INC-003-dhcp-apipa/README.md`](INC-003-dhcp-apipa/README.md)
+
 ## Planned Incidents
 
-- INC-003 — DHCP failure / APIPA
 - INC-004 — Group Policy application failure
 - INC-005 — File-share / group-permission issue
 - Windows service or connectivity incident
