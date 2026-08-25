@@ -57,6 +57,15 @@ Location: `screenshots/incidents/INC-004-gpo-failure/`
 - `02-computer-in-wrong-ou.png` — identifies `WIN11-01` in the default `Computers` container instead of `CORP-Workstations`
 - `03-gpo-restored.png` — confirms the workstation GPO applies again after the computer is returned to the correct OU and policy is refreshed
 
+### INC-005 — File Share / NTFS Permission Failure
+
+Location: `screenshots/incidents/INC-005-file-permissions/`
+
+- `01-finance-access-denied.png` — user-facing access-denied symptom for the Finance share
+- `02-finance-group-missing.png` — current user token does not contain `CORP\GG-Finance`
+- `03-finance-ntfs-permissions.png` — server-side NTFS ACL used to authorize Finance access through the AD security group
+- `04-finance-access-restored.png` — verifies successful access after group membership and the user's logon token are refreshed
+
 Together, the incident evidence follows the same lifecycle: **symptom → diagnosis → root cause → remediation → verification**.
 
 ## Repository Convention
