@@ -204,6 +204,31 @@ The computer object was moved back into the correct OU, Group Policy was refresh
 
 Full case study: [`incidents/INC-004-gpo-failure/README.md`](incidents/INC-004-gpo-failure/README.md)
 
+### INC-005 — File Share / NTFS Permission Failure ✅
+
+`CORP\amorgan` could reach `DC01`, but access to the Finance departmental share was denied after the user no longer had the `GG-Finance` group membership required by the folder's authorization model.
+
+![Finance access denied](screenshots/incidents/INC-005-file-permissions/01-finance-access-denied.png)
+
+`whoami /groups` showed that the user's current security token did not contain `CORP\GG-Finance`.
+
+![Finance group missing](screenshots/incidents/INC-005-file-permissions/02-finance-group-missing.png)
+
+The server-side NTFS ACL was reviewed to confirm departmental access was controlled through the Finance security group rather than individual user assignments.
+
+![Finance NTFS permissions](screenshots/incidents/INC-005-file-permissions/03-finance-ntfs-permissions.png)
+
+After restoring the AD group membership and establishing a fresh user logon session, access to `\\DC01\Finance` succeeded again.
+
+![Finance access restored](screenshots/incidents/INC-005-file-permissions/04-finance-access-restored.png)
+
+**Root cause:** the user's security token lacked the `GG-Finance` group required by the Finance folder's NTFS ACL.  
+**Resolution:** restore the AD group membership and sign out/in to obtain a new logon token.  
+**Verification:** confirm the user can successfully access the original Finance share.  
+**Automation opportunity:** correlate AD membership, current token groups, SMB share permissions, and NTFS ACLs to identify authorization gaps without automatically changing access.
+
+Full case study: [`incidents/INC-005-file-permissions/README.md`](incidents/INC-005-file-permissions/README.md)
+
 ## Project Roadmap
 
 1. **Infrastructure Baseline** — ✅ Complete
@@ -211,8 +236,8 @@ Full case study: [`incidents/INC-004-gpo-failure/README.md`](incidents/INC-004-g
 3. **INC-002: DNS / Name Resolution Failure** — ✅ Complete
 4. **INC-003: DHCP Failure / APIPA** — ✅ Complete
 5. **INC-004: Group Policy Failure** — ✅ Complete
-6. **INC-005: File-Share / Permission Issue** — Next
-7. **PowerShell Diagnostics** — Planned
+6. **INC-005: File-Share / Permission Issue** — ✅ Complete
+7. **PowerShell Diagnostics** — Next
 8. **Controlled Remediation** — Planned
 9. **Ticket-Style Reporting / Knowledge Base** — Planned
 
