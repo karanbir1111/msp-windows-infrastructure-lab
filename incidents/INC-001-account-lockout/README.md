@@ -11,7 +11,7 @@
 
 ## Business Impact
 
-The affected user cannot authenticate to the domain workstation and therefore cannot access their normal Windows session or domain resources.
+The user cannot authenticate to the domain workstation and therefore cannot access the normal Windows session or domain resources.
 
 ## Environment
 
@@ -21,57 +21,74 @@ The affected user cannot authenticate to the domain workstation and therefore ca
 - User OU: `CORP-Users/Finance`
 - Security group: `GG-Finance`
 
-## Troubleshooting Approach
+## Symptoms
 
-The incident was approached from the symptom outward rather than assuming the account itself was the problem.
+Windows displayed the message:
 
-### 1. Validate the workstation path
+> The referenced account is currently locked out and may not be logged on to.
 
-Before modifying the user account, the workstation's basic infrastructure dependencies were considered:
+![Locked-out sign-in message](../../screenshots/incidents/INC-001-account-lockout/01-account-locked.png)
 
-- valid DHCP configuration,
-- connectivity to `DC01`,
-- DNS resolution through the domain DNS server, and
-- domain-controller availability.
+This confirms the end-user symptom, but the incident was still validated from the directory side before remediation.
 
-The healthy Phase 1 baseline had already established that the workstation could communicate with and authenticate against `DC01`.
+## Investigation
 
-### 2. Inspect the Active Directory account
+The troubleshooting process followed the dependency chain rather than immediately resetting or modifying the account.
 
-The Finance user was checked in Active Directory to determine whether the account was:
+1. Confirm the workstation was already operating from the known-good Phase 1 network baseline.
+2. Verify that the issue was isolated to the user account rather than a broader client, DNS, or domain-controller outage.
+3. Query the Active Directory account to distinguish between an account that was disabled, expired, password-expired, or locked out.
 
-- nonexistent,
-- disabled,
-- expired,
-- password-expired, or
-- locked out.
+PowerShell was used as a diagnostic check:
 
-The account remained **enabled**, but its **LockedOut** state was true. This distinction is important: an enabled account can still be prevented from authenticating because of the domain's account-lockout policy.
+```powershell
+Get-ADUser amorgan -Properties LockedOut |
+Select-Object Name,SamAccountName,Enabled,LockedOut
+```
+
+The account was still enabled, but `LockedOut` returned `True`.
+
+![PowerShell confirms locked account](../../screenshots/incidents/INC-001-account-lockout/02-powershell.png)
+
+This distinction matters operationally: `Enabled = True` means the account itself is active, while `LockedOut = True` means Active Directory is temporarily refusing authentication because the account-lockout policy was triggered.
 
 ## Root Cause
 
-`amorgan` exceeded the configured invalid-logon threshold after repeated incorrect password attempts. Active Directory therefore locked the account as designed.
+`amorgan` exceeded the configured invalid-logon threshold after repeated incorrect password attempts. Active Directory locked the account as designed by the domain account-lockout policy.
 
 ## Resolution
 
-After confirming the cause, the account was manually unlocked in Active Directory Users and Computers.
+After confirming the user's identity and the root cause, the account was manually unlocked through **Active Directory Users and Computers**.
 
-The first incident is intentionally remediated through the GUI so the underlying administrative process is understood before the same workflow is automated with PowerShell.
+The first incident was intentionally remediated manually so the administrative workflow is understood before automating the same action with PowerShell.
 
 ## Verification
 
-The resolution is not considered complete simply because the account was unlocked. Verification requires confirming both:
+The remediation was verified at two levels.
 
-1. the Active Directory account no longer reports a locked state; and
-2. Alex can successfully authenticate again from `WIN11-01` using the correct credentials.
+### Directory-state verification
 
-Final before/after screenshots will be added to this incident directory as the evidence set is finalized.
+The same PowerShell query was run again after the unlock. `LockedOut` changed from `True` to `False`.
+
+![Before and after account state](../../screenshots/incidents/INC-001-account-lockout/04_After_unlocking.png)
+
+### End-user verification
+
+Alex then successfully signed back into `WIN11-01`. Running `whoami` returned:
+
+```text
+corp\amorgan
+```
+
+![Successful domain login after remediation](../../screenshots/incidents/INC-001-account-lockout/03.png)
+
+The incident was therefore considered resolved only after both the Active Directory state and the user-facing login were verified.
 
 ## Automation Opportunity
 
-This incident exposes a repeatable service-desk workflow that is well suited to PowerShell diagnostics.
+This incident exposes a repeatable service-desk workflow suitable for PowerShell diagnostics.
 
-A future user-diagnostic command could accept a username and return a concise summary such as:
+A future diagnostic tool can accept a username and report:
 
 ```text
 User:           Alex Morgan
@@ -86,15 +103,16 @@ Diagnosis: Active Directory account is locked.
 Recommended action: Verify user identity and unlock the account.
 ```
 
-Controlled remediation could then offer an explicit technician-approved unlock action rather than automatically changing account state.
+A later remediation function can offer an explicit technician-approved `Unlock-ADAccount` action rather than changing account state automatically.
 
 ## Skills Demonstrated
 
 - Active Directory user administration
 - Account-lockout policy behavior
 - Authentication troubleshooting
-- Differentiating disabled vs. locked account states
-- Structured root-cause analysis
+- PowerShell-based identity diagnostics
+- Differentiating enabled vs. locked account states
+- Root-cause analysis
 - Manual remediation
-- End-user verification
-- Identification of a safe PowerShell automation opportunity
+- Post-change verification
+- Identification of a safe automation opportunity
