@@ -158,13 +158,38 @@ DNS was restored to DHCP-provided configuration, the resolver cache was flushed,
 
 Full case study: [`incidents/INC-002-dns-failure/README.md`](incidents/INC-002-dns-failure/README.md)
 
+### INC-003 — DHCP Failure / APIPA ✅
+
+`WIN11-01` was unable to obtain a DHCP lease after the `Corporate Workstations` scope on `DC01` was intentionally deactivated. Windows fell back to an APIPA address in the `169.254.0.0/16` range.
+
+![APIPA address](screenshots/incidents/INC-003-dhcp-apipa/01-apipa-address.png)
+
+The client remained configured for DHCP but could no longer reach the domain controller because it did not have a valid address on the `10.10.10.0/24` lab subnet.
+
+![APIPA and failed DC connectivity](screenshots/incidents/INC-003-dhcp-apipa/02-apipa-no-dc-connectivity.png)
+
+Server-side investigation identified the inactive DHCP scope as the root cause.
+
+![Inactive DHCP scope](screenshots/incidents/INC-003-dhcp-apipa/03-dhcp-scope-inactive.png)
+
+The scope was reactivated and the client lease was renewed. `WIN11-01` returned to a valid DHCP configuration and connectivity to `DC01` was restored.
+
+![DHCP restored and verified](screenshots/incidents/INC-003-dhcp-apipa/04-dhcp-restored-verified.png)
+
+**Root cause:** the Windows DHCP scope serving the workstation subnet was inactive.  
+**Resolution:** reactivate the scope and renew the client DHCP lease.  
+**Verification:** confirm a valid `10.10.10.x` lease and restored connectivity to `DC01`.  
+**Automation opportunity:** build PowerShell diagnostics that detect APIPA, inspect DHCP/DNS configuration, test DC reachability, and check server-side DHCP scope state.
+
+Full case study: [`incidents/INC-003-dhcp-apipa/README.md`](incidents/INC-003-dhcp-apipa/README.md)
+
 ## Project Roadmap
 
 1. **Infrastructure Baseline** — ✅ Complete
 2. **INC-001: AD Account Lockout** — ✅ Complete
 3. **INC-002: DNS / Name Resolution Failure** — ✅ Complete
-4. **INC-003: DHCP Failure / APIPA** — Next
-5. **INC-004: Group Policy Failure** — Planned
+4. **INC-003: DHCP Failure / APIPA** — ✅ Complete
+5. **INC-004: Group Policy Failure** — Next
 6. **INC-005: File-Share / Permission Issue** — Planned
 7. **PowerShell Diagnostics** — Planned
 8. **Controlled Remediation** — Planned
