@@ -68,13 +68,40 @@ Location: `screenshots/incidents/INC-005-file-permissions/`
 
 Together, the incident evidence follows the same lifecycle: **symptom → diagnosis → root cause → remediation → verification**.
 
+## Phase 3 PowerShell Diagnostic & Remediation Evidence
+
+Location: `screenshots/powershell/`
+
+### Active Directory Account Diagnostics
+
+- `01-ad-user-diagnostic-healthy.png` — healthy AD account diagnostic for `amorgan`
+- `02-ad-user-diagnostic-lockout.png` — diagnostic correctly identifies `LockedOut = True`
+- `03-controlled-unlock-confirmation.png` — remediation pauses for explicit technician confirmation before changing account state
+- `04-controlled-unlock-success.png` — post-action verification confirms the account was successfully unlocked
+
+### Network Diagnostics
+
+- `05-network-diagnostic-healthy.png` — healthy workstation DHCP, DNS, DC connectivity, host resolution, and AD SRV checks
+- `06-network-diagnostic-dns-failure.png` — diagnostic isolates an incorrect client DNS configuration while IP connectivity remains available
+- `07-network-diagnostic-apipa.png` — diagnostic detects APIPA and identifies likely DHCP lease failure
+
+### Controlled Network Remediation
+
+- `08-network-remediation-dns-confirmation.png` — technician confirmation required before changing client DNS configuration
+- `09-network-remediation-dns-success.png` — verification confirms the expected domain DNS server after remediation
+- `10-network-remediation-dhcp-success.png` — DHCP renewal restores a valid workstation address after the server-side scope is available again
+
+The PowerShell evidence follows a safe support-engineering pattern: **detect → diagnose → confirm → remediate → verify**.
+
 ## Repository Convention
 
 Incident case-study documentation lives under `incidents/INC-XXX-.../README.md`.
 
-Visual evidence lives separately under `screenshots/incidents/INC-XXX-.../`.
+Incident visual evidence lives under `screenshots/incidents/INC-XXX-.../`.
 
-This keeps the repository easy to browse while allowing each case study to embed its screenshots directly.
+PowerShell diagnostic and remediation evidence lives under `screenshots/powershell/`.
+
+This keeps case-study documentation separate from visual evidence while making each project phase easy to browse.
 
 ## Security Rules
 
