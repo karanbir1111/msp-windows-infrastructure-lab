@@ -1,51 +1,87 @@
 # Incident Case Studies
 
-This directory contains realistic MSP-style Windows infrastructure incidents introduced after the healthy Phase 1 baseline was established.
+This folder contains five MSP-style Windows support incidents built from a healthy `corp.lab` baseline.
 
 Each case study follows the same operational structure:
 
-**Problem → Symptoms → Investigation → Root Cause → Resolution → Verification → Automation Opportunity**
+**problem → symptoms → investigation → root cause → resolution → verification → automation / prevention notes**
 
 ## Completed Incidents
 
 ### INC-001 — Active Directory Account Lockout ✅
 
-A Finance user was unable to sign in after exceeding the domain invalid-logon threshold. The incident demonstrates account-state diagnosis, manual Active Directory remediation, and end-user verification.
+A Finance user was locked out after repeated invalid password attempts. The incident demonstrates account-state validation, lockout diagnosis, manual remediation, and post-fix authentication verification.
 
 Case study: [`INC-001-account-lockout/README.md`](INC-001-account-lockout/README.md)
 
+Automation:
+- [`../powershell/diagnostics/Get-ADUserDiagnostic.ps1`](../powershell/diagnostics/Get-ADUserDiagnostic.ps1)
+- [`../powershell/remediation/Unlock-ADUserSafe.ps1`](../powershell/remediation/Unlock-ADUserSafe.ps1)
+
 ### INC-002 — DNS Misconfiguration / Name-Resolution Failure ✅
 
-A domain workstation retained IP connectivity to `DC01` but could not resolve internal names because its DNS client was pointed to a public resolver. The incident demonstrates fault-domain isolation, Active Directory DNS dependencies, SRV-record validation, remediation, and verification.
+The workstation retained IP connectivity while internal Active Directory name resolution and SRV discovery failed because the client was configured with the wrong DNS server.
 
 Case study: [`INC-002-dns-failure/README.md`](INC-002-dns-failure/README.md)
 
+Automation:
+- [`../powershell/diagnostics/Get-NetworkDiagnostics.ps1`](../powershell/diagnostics/Get-NetworkDiagnostics.ps1)
+- [`../powershell/remediation/Repair-NetworkClient.ps1`](../powershell/remediation/Repair-NetworkClient.ps1)
+
 ### INC-003 — DHCP Failure / APIPA ✅
 
-A DHCP-enabled workstation failed to obtain a lease after its server-side scope was deactivated and fell back to a `169.254.x.x` APIPA address. The incident demonstrates DHCP troubleshooting, APIPA interpretation, server-side root-cause analysis, lease recovery, and connectivity verification.
+The Windows DHCP scope was deliberately deactivated, causing the workstation to self-assign an APIPA address and lose domain-controller connectivity.
 
 Case study: [`INC-003-dhcp-apipa/README.md`](INC-003-dhcp-apipa/README.md)
 
+Automation:
+- [`../powershell/diagnostics/Get-NetworkDiagnostics.ps1`](../powershell/diagnostics/Get-NetworkDiagnostics.ps1)
+- [`../powershell/remediation/Repair-NetworkClient.ps1`](../powershell/remediation/Repair-NetworkClient.ps1)
+
 ### INC-004 — Group Policy Application Failure ✅
 
-A domain-joined workstation stopped receiving its expected security baseline because its computer object was moved outside the OU to which the GPO was linked. The incident demonstrates `gpresult` analysis, OU/GPO scope troubleshooting, Active Directory object placement, remediation, and endpoint verification.
+A workstation remained domain-joined but stopped receiving the expected workstation baseline after its computer object was moved outside the GPO-linked OU.
 
 Case study: [`INC-004-gpo-failure/README.md`](INC-004-gpo-failure/README.md)
 
+Automation:
+- [`../powershell/diagnostics/Get-GPODiagnostic.ps1`](../powershell/diagnostics/Get-GPODiagnostic.ps1)
+- [`../powershell/remediation/Repair-GPOComputerScope.ps1`](../powershell/remediation/Repair-GPOComputerScope.ps1)
+
 ### INC-005 — File Share / NTFS Permission Failure ✅
 
-A Finance user could reach the server but was denied access to the departmental share because the user's current authorization state did not include the `GG-Finance` security group required by the NTFS ACL. The incident demonstrates SMB/NTFS permission troubleshooting, AD group-based access, security-token refresh, and end-user verification.
+A Finance user could reach the file server but could not access the Finance share after losing the AD security-group membership required by the NTFS authorization model.
 
 Case study: [`INC-005-file-permissions/README.md`](INC-005-file-permissions/README.md)
 
-## Next Phase
+Automation:
+- [`../powershell/diagnostics/Get-FileAccessDiagnostic.ps1`](../powershell/diagnostics/Get-FileAccessDiagnostic.ps1)
+- [`../powershell/remediation/Repair-FileAccessGroup.ps1`](../powershell/remediation/Repair-FileAccessGroup.ps1)
 
-The incident set now provides manual troubleshooting examples across Active Directory accounts, DNS, DHCP, Group Policy, and file permissions. The next phase is to convert repeatable diagnostic checks into PowerShell tooling while keeping remediation controlled and auditable.
+## Ticket / Knowledge Base Standard
 
-## Evidence Convention
+The case studies are intended to model documentation that can be handed to another technician. A reusable ticket and knowledge-base template is available here:
 
-Incident documentation is stored here under `incidents/INC-XXX-.../`.
+[`../documentation/TICKET-TEMPLATE.md`](../documentation/TICKET-TEMPLATE.md)
 
-Screenshots are stored separately under `screenshots/incidents/INC-XXX-.../` and embedded into the corresponding case study.
+The template captures business impact, symptoms, environment, investigation, root cause, resolution, verification, and automation / prevention notes.
 
-This separation keeps troubleshooting documentation readable while maintaining a clean evidence library.
+## Evidence
+
+Incident screenshots are stored separately under:
+
+```text
+screenshots/incidents/
+```
+
+PowerShell diagnostic and controlled remediation evidence is stored under:
+
+```text
+screenshots/powershell/
+```
+
+See [`../screenshots/README.md`](../screenshots/README.md) for the complete evidence index.
+
+## Project Status
+
+All five incident case studies, PowerShell diagnostics, controlled remediation workflows, and ticket-style documentation are complete.
