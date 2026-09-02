@@ -1,6 +1,6 @@
 # Screenshot Evidence
 
-Screenshots in this repository are selected as technical evidence. The goal is to prove configuration, validation, troubleshooting, and remediation — not to document every installation click.
+Screenshots in this repository are selected as technical evidence. The goal is to prove configuration, validation, troubleshooting, and remediation, not to document every installation click.
 
 ## Phase 1 Evidence Set
 
@@ -28,7 +28,7 @@ Location: `screenshots/incidents/INC-001-account-lockout/`
 
 - `01-account-locked.png` — end-user lockout message on `WIN11-01`
 - `02-powershell.png` — PowerShell confirms `Enabled = True` and `LockedOut = True`
-- `04_After_unlocking.png` — before/after comparison showing `LockedOut` change from `True` to `False`
+- `04_After_unlocking.png` — before / after comparison showing `LockedOut` change from `True` to `False`
 - `03.png` — successful post-remediation login confirmed with `whoami = corp\amorgan`
 
 ### INC-002 — DNS Misconfiguration / Name-Resolution Failure
@@ -72,24 +72,35 @@ Together, the incident evidence follows the same lifecycle: **symptom → diagno
 
 Location: `screenshots/powershell/`
 
-### Active Directory Account Diagnostics
+### Active Directory Account Diagnostics and Remediation
 
 - `01-ad-user-diagnostic-healthy.png` — healthy AD account diagnostic for `amorgan`
 - `02-ad-user-diagnostic-lockout.png` — diagnostic correctly identifies `LockedOut = True`
 - `03-controlled-unlock-confirmation.png` — remediation pauses for explicit technician confirmation before changing account state
 - `04-controlled-unlock-success.png` — post-action verification confirms the account was successfully unlocked
 
-### Network Diagnostics
+### Network Diagnostics and Remediation
 
 - `05-network-diagnostic-healthy.png` — healthy workstation DHCP, DNS, DC connectivity, host resolution, and AD SRV checks
 - `06-network-diagnostic-dns-failure.png` — diagnostic isolates an incorrect client DNS configuration while IP connectivity remains available
 - `07-network-diagnostic-apipa.png` — diagnostic detects APIPA and identifies likely DHCP lease failure
-
-### Controlled Network Remediation
-
 - `08-network-remediation-dns-confirmation.png` — technician confirmation required before changing client DNS configuration
 - `09-network-remediation-dns-success.png` — verification confirms the expected domain DNS server after remediation
 - `10-network-remediation-dhcp-success.png` — DHCP renewal restores a valid workstation address after the server-side scope is available again
+
+### Group Policy Diagnostics and Remediation
+
+- `11-gpo-diagnostic-healthy.png` — confirms the expected workstation GPO is applied and the computer object is in the correct OU
+- `12-gpo-diagnostic-scope-failure.png` — identifies the workstation outside `CORP-Workstations` and the expected GPO missing
+- `13-gpo-remediation-confirmation.png` — requires explicit technician confirmation before moving the AD computer object
+- `14-gpo-remediation-success.png` — verifies `WIN11-01` was returned to the expected OU and identifies the required endpoint policy refresh
+
+### File Access Diagnostics and Remediation
+
+- `15-file-access-diagnostic-healthy.png` — correlates healthy `GG-Finance` membership, SMB share state, and NTFS authorization
+- `16-file-access-diagnostic-group-missing.png` — identifies missing `GG-Finance` membership while the expected NTFS group authorization remains present
+- `17-file-access-remediation-confirmation.png` — requires technician approval before restoring the user's AD security-group membership
+- `18-file-access-remediation-success.png` — verifies membership restoration and identifies the need for a fresh user logon token
 
 The PowerShell evidence follows a safe support-engineering pattern: **detect → diagnose → confirm → remediate → verify**.
 
@@ -101,8 +112,10 @@ Incident visual evidence lives under `screenshots/incidents/INC-XXX-.../`.
 
 PowerShell diagnostic and remediation evidence lives under `screenshots/powershell/`.
 
-This keeps case-study documentation separate from visual evidence while making each project phase easy to browse.
+PowerShell source code lives under `powershell/diagnostics/` and `powershell/remediation/`.
+
+This keeps case-study documentation, implementation, and evidence separate while making each project phase easy to browse.
 
 ## Security Rules
 
-Never include passwords, product keys, API keys, personal email addresses, unrelated private information, or unrelated host files/browser tabs. Evidence should be sanitized before publication.
+Never include passwords, product keys, API keys, personal email addresses, unrelated private information, or unrelated host files / browser tabs. Evidence should be sanitized before publication.
