@@ -6,7 +6,7 @@ Screenshots in this repository are selected as technical evidence. The goal is t
 
 The Phase 1 evidence demonstrates the progression from a standalone Windows Server to a functioning domain environment with DHCP, DNS, domain authentication, and Group Policy.
 
-1. `01-dc01-server-installed.png` — verifies the Windows Server hostname `DC01`
+1. `01.png` — verifies the Windows Server hostname `DC01`
 2. `02-dc01-static-network.png` — verifies static `10.10.10.10/24` addressing and DNS configuration
 3. `03-ad-ds-dns-installed.png` — shows AD DS and DNS roles available on DC01
 4. `04-corp-lab-dns-zone.png` — shows the AD-integrated `corp.lab` DNS zone
