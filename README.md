@@ -1,17 +1,19 @@
 # MSP Windows Infrastructure Troubleshooting & Automation Lab
 
-A hands-on Windows infrastructure lab designed to simulate the type of work performed in a small MSP environment: building and supporting a Windows domain, validating core services, troubleshooting realistic incidents, documenting root cause, and identifying safe opportunities for PowerShell automation.
+A hands-on Windows infrastructure lab designed to simulate the type of work performed in a small MSP environment: building and supporting a Windows domain, validating core services, troubleshooting realistic incidents, documenting root cause, and converting repeatable support workflows into safe PowerShell diagnostics and controlled remediation.
 
-## Why This Project Exists
+## Project Goal
 
-The goal is not simply to install Active Directory. The lab is built around a support workflow:
+The project is built around a support-engineering workflow rather than a simple installation checklist:
 
 1. Establish a known-good Windows infrastructure baseline.
-2. Validate each dependency independently: networking, DNS, DHCP, authentication, and Group Policy.
+2. Validate each dependency independently: networking, DNS, DHCP, authentication, Group Policy, and authorization.
 3. Introduce realistic user and infrastructure incidents.
-4. Troubleshoot from symptoms to root cause rather than applying random fixes.
-5. Verify the resolution from the end-user perspective.
-6. Automate repetitive diagnostic/remediation steps only after the manual process is understood.
+4. Troubleshoot from symptoms to root cause.
+5. Verify each resolution from the end-user perspective.
+6. Convert proven troubleshooting paths into reusable PowerShell diagnostics.
+7. Add controlled remediation only where the change can be scoped, confirmed, and verified.
+8. Document the work in a repeatable MSP ticket / knowledge-base format.
 
 ## Environment
 
@@ -22,8 +24,9 @@ The goal is not simply to install Active Directory. The lab is built around a su
 - DNS
 - DHCP
 - Group Policy
+- SMB file sharing and NTFS authorization
 - Windows networking
-- PowerShell for validation and later automation
+- PowerShell diagnostics and controlled remediation
 
 ## Lab Network
 
@@ -37,23 +40,21 @@ The goal is not simply to install Active Directory. The lab is built around a su
 | DHCP scope | `10.10.10.100-199` |
 | Client DNS | `10.10.10.10` |
 
-## Phase 1 — Healthy Infrastructure Baseline ✅
+## Phase 1 — Infrastructure Baseline ✅
 
-A functioning Windows domain environment has been built, validated, and preserved as a known-good baseline before incident simulation.
+A functioning Windows domain environment was built and preserved as a known-good baseline before deliberate fault injection.
 
 ### Domain Controller and Core Services
 
-`DC01` was configured with a static `10.10.10.10/24` address and promoted as the first domain controller for `corp.lab`. The server also hosts Active Directory-integrated DNS and the Windows DHCP service.
+`DC01` was configured with a static `10.10.10.10/24` address and promoted as the first domain controller for `corp.lab`. The server also hosts Active Directory-integrated DNS and Windows DHCP.
 
 ![DC01 AD DS and DNS](screenshots/03-ad-ds-dns-installed.png)
 
-The `corp.lab` DNS zone is hosted on `DC01`, providing the name-resolution foundation required by Active Directory clients.
+The `corp.lab` DNS zone provides the internal name-resolution and service-discovery foundation required by Active Directory clients.
 
 ![corp.lab DNS zone](screenshots/04-corp-lab-dns-zone.png)
 
 ### Active Directory Organization
-
-The directory was organized into purpose-specific OUs for users, workstations, servers, and security groups.
 
 ```text
 corp.lab
@@ -80,17 +81,17 @@ Windows Server DHCP was authorized in Active Directory and configured with the w
 
 ![Windows DHCP scope](screenshots/07-dhcp-scope.png)
 
-`WIN11-01` received its network configuration dynamically from `DC01`, including domain DNS.
+`WIN11-01` receives its IP configuration and domain DNS settings dynamically from `DC01`.
 
 ![WIN11-01 DHCP and DNS configuration](screenshots/08-client-network-dhcp.png)
 
 ### Domain Join and Authentication
 
-`WIN11-01` was joined to `corp.lab` and moved into `CORP-Workstations`.
+`WIN11-01` was joined to `corp.lab` and placed in `CORP-Workstations`.
 
 ![WIN11-01 domain joined](screenshots/09-win11-domain-joined.png)
 
-Domain authentication was validated using the Finance test account `CORP\amorgan` against `\\DC01` with expected security-group membership.
+Domain authentication was validated with `CORP\amorgan` against `\\DC01` with expected group membership.
 
 ![Domain user authentication](screenshots/10-domain-user-authentication.png)
 
@@ -100,170 +101,199 @@ A workstation GPO named `CORP Workstation Security Baseline` was linked to `CORP
 
 ![Workstation GPO configuration](screenshots/11-workstation-gpo.png)
 
-`gpresult` confirmed the policy was applied from `DC01.corp.lab`, and a legal logon notice provided visible end-user verification.
+`gpresult` confirmed that the policy was applied from `DC01.corp.lab`, and the legal logon notice provided visible end-user verification.
 
 ![GPO verification](screenshots/12-gpo-verification.png)
 
 ![GPO logon notice](screenshots/13-gpo-logon-notice.png)
 
-Healthy-state VirtualBox snapshots were created for both VMs before deliberate incident simulation.
+Healthy-state VirtualBox snapshots were created before deliberate incident simulation.
 
-## Phase 2 — MSP Incident Simulation 🔧
+## Phase 2 — MSP Incident Simulation ✅
 
-### INC-001 — Active Directory Account Lockout ✅
+Five realistic incidents were reproduced, diagnosed, remediated, and documented using the same operational pattern:
 
-A Finance user was unable to sign in after repeated incorrect password attempts.
+**problem → symptoms → investigation → root cause → resolution → verification → automation opportunity**
 
-![Account lockout symptom](screenshots/incidents/INC-001-account-lockout/01-account-locked.png)
+### INC-001 — Active Directory Account Lockout
 
-PowerShell confirmed the account was still enabled but had `LockedOut = True`, isolating the issue to the lockout state.
-
-![PowerShell lockout diagnosis](screenshots/incidents/INC-001-account-lockout/02-powershell.png)
-
-After remediation, the account state changed to unlocked and the user successfully authenticated again.
-
-![Account state after unlock](screenshots/incidents/INC-001-account-lockout/04_After_unlocking.png)
-
-![Successful login after remediation](screenshots/incidents/INC-001-account-lockout/03.png)
+A Finance user was unable to sign in after repeated invalid password attempts. PowerShell confirmed the account remained enabled but had `LockedOut = True`. The account was unlocked and successful authentication was verified.
 
 **Root cause:** the user exceeded the domain invalid-logon threshold.  
-**Resolution:** manually unlock the account after validation.  
-**Verification:** confirm `LockedOut = False` and successful sign-in.  
-**Automation opportunity:** build a PowerShell user-diagnostic workflow for account state and controlled remediation.
+**Resolution:** validate the account state, unlock the approved account, and verify `LockedOut = False`.  
+**Automation:** `Get-ADUserDiagnostic.ps1` + `Unlock-ADUserSafe.ps1`.
 
 Full case study: [`incidents/INC-001-account-lockout/README.md`](incidents/INC-001-account-lockout/README.md)
 
-### INC-002 — DNS Misconfiguration / Name-Resolution Failure ✅
+### INC-002 — DNS Misconfiguration / Name-Resolution Failure
 
-`WIN11-01` retained valid IP connectivity but was intentionally configured to use `8.8.8.8` instead of the Active Directory DNS server `10.10.10.10`.
+`WIN11-01` retained valid IP connectivity but was configured to use `8.8.8.8` instead of the domain DNS server. The workstation could reach `DC01` by IP while internal hostname and LDAP SRV lookups failed.
 
-![Wrong DNS configuration](screenshots/incidents/INC-002-dns-failure/01-wrong-dns-config.png)
-
-The workstation could still reach `DC01` by IP, while `DC01.corp.lab` failed to resolve. This isolated the problem to DNS rather than general network connectivity.
-
-![IP works while DNS fails](screenshots/incidents/INC-002-dns-failure/02-ip-works-name-fails.png)
-
-An Active Directory LDAP SRV lookup also failed, demonstrating that the misconfiguration affected domain service discovery, not only host-name resolution.
-
-![AD SRV lookup failure](screenshots/incidents/INC-002-dns-failure/03-ad-srv-lookup-fails.png)
-
-DNS was restored to DHCP-provided configuration, the resolver cache was flushed, the lease was refreshed, and internal DNS resolution succeeded again.
-
-![DNS restored and verified](screenshots/incidents/INC-002-dns-failure/04-dns-restored-verified.png)
-
-**Root cause:** the client was using a public resolver that had no knowledge of the private `corp.lab` namespace.  
-**Resolution:** restore DHCP-provided DNS (`10.10.10.10`) and refresh client DNS state.  
-**Verification:** confirm internal host lookup and AD SRV discovery succeed.  
-**Automation opportunity:** build a PowerShell network diagnostic that compares expected DNS configuration, tests DC reachability, resolves internal names, and checks AD SRV records.
+**Root cause:** the client pointed away from Active Directory-integrated DNS.  
+**Resolution:** restore the expected domain DNS configuration and refresh client DNS state.  
+**Automation:** `Get-NetworkDiagnostics.ps1` + `Repair-NetworkClient.ps1`.
 
 Full case study: [`incidents/INC-002-dns-failure/README.md`](incidents/INC-002-dns-failure/README.md)
 
-### INC-003 — DHCP Failure / APIPA ✅
+### INC-003 — DHCP Failure / APIPA
 
-`WIN11-01` was unable to obtain a DHCP lease after the `Corporate Workstations` scope on `DC01` was intentionally deactivated. Windows fell back to an APIPA address in the `169.254.0.0/16` range.
+The `Corporate Workstations` DHCP scope was deliberately deactivated. `WIN11-01` failed to obtain a lease and self-assigned a `169.254.x.x` APIPA address, losing connectivity to `DC01`.
 
-![APIPA address](screenshots/incidents/INC-003-dhcp-apipa/01-apipa-address.png)
-
-The client remained configured for DHCP but could no longer reach the domain controller because it did not have a valid address on the `10.10.10.0/24` lab subnet.
-
-![APIPA and failed DC connectivity](screenshots/incidents/INC-003-dhcp-apipa/02-apipa-no-dc-connectivity.png)
-
-Server-side investigation identified the inactive DHCP scope as the root cause.
-
-![Inactive DHCP scope](screenshots/incidents/INC-003-dhcp-apipa/03-dhcp-scope-inactive.png)
-
-The scope was reactivated and the client lease was renewed. `WIN11-01` returned to a valid DHCP configuration and connectivity to `DC01` was restored.
-
-![DHCP restored and verified](screenshots/incidents/INC-003-dhcp-apipa/04-dhcp-restored-verified.png)
-
-**Root cause:** the Windows DHCP scope serving the workstation subnet was inactive.  
-**Resolution:** reactivate the scope and renew the client DHCP lease.  
-**Verification:** confirm a valid `10.10.10.x` lease and restored connectivity to `DC01`.  
-**Automation opportunity:** build PowerShell diagnostics that detect APIPA, inspect DHCP/DNS configuration, test DC reachability, and check server-side DHCP scope state.
+**Root cause:** the DHCP scope serving the workstation subnet was inactive.  
+**Resolution:** reactivate the scope and renew the client lease.  
+**Automation:** `Get-NetworkDiagnostics.ps1` detects APIPA; `Repair-NetworkClient.ps1` performs controlled client-side renewal once server-side DHCP is available.
 
 Full case study: [`incidents/INC-003-dhcp-apipa/README.md`](incidents/INC-003-dhcp-apipa/README.md)
 
-### INC-004 — Group Policy Application Failure ✅
+### INC-004 — Group Policy Application Failure
 
-`WIN11-01` remained domain-joined and reachable, but `gpresult` no longer showed the expected `CORP Workstation Security Baseline` GPO.
+`WIN11-01` remained domain-joined but no longer received the expected workstation baseline because its computer object had been moved from `CORP-Workstations` into the default `Computers` container.
 
-![GPO missing from gpresult](screenshots/incidents/INC-004-gpo-failure/01-gpo-missing.png)
-
-Investigation showed that the `WIN11-01` computer object had been moved from `CORP-Workstations` into the default `Computers` container. Because the workstation GPO was linked to `CORP-Workstations`, the client was outside the policy's scope.
-
-![Computer object in wrong container](screenshots/incidents/INC-004-gpo-failure/02-computer-in-wrong-ou.png)
-
-The computer object was moved back into the correct OU, Group Policy was refreshed, and `gpresult` confirmed the workstation security baseline applied again.
-
-![GPO restored after remediation](screenshots/incidents/INC-004-gpo-failure/03-gpo-restored.png)
-
-**Root cause:** `WIN11-01` was outside the OU to which the workstation GPO was linked.  
-**Resolution:** move the computer object back to `CORP-Workstations`, refresh policy, and restart the client.  
-**Verification:** confirm `CORP Workstation Security Baseline` appears again in `gpresult`.  
-**Automation opportunity:** build a PowerShell diagnostic that checks a computer's distinguished name/current OU and compares it with expected management scope.
+**Root cause:** the computer object was outside the OU where the GPO was linked.  
+**Resolution:** return `WIN11-01` to `CORP-Workstations`, refresh Group Policy, and verify the expected GPO is applied.  
+**Automation:** `Get-GPODiagnostic.ps1` + `Repair-GPOComputerScope.ps1`.
 
 Full case study: [`incidents/INC-004-gpo-failure/README.md`](incidents/INC-004-gpo-failure/README.md)
 
-### INC-005 — File Share / NTFS Permission Failure ✅
+### INC-005 — File Share / NTFS Permission Failure
 
-`CORP\amorgan` could reach `DC01`, but access to the Finance departmental share was denied after the user no longer had the `GG-Finance` group membership required by the folder's authorization model.
+`CORP\amorgan` could reach `DC01` but could not access the Finance share after the user's security token no longer contained the `GG-Finance` group required by the NTFS authorization model.
 
-![Finance access denied](screenshots/incidents/INC-005-file-permissions/01-finance-access-denied.png)
-
-`whoami /groups` showed that the user's current security token did not contain `CORP\GG-Finance`.
-
-![Finance group missing](screenshots/incidents/INC-005-file-permissions/02-finance-group-missing.png)
-
-The server-side NTFS ACL was reviewed to confirm departmental access was controlled through the Finance security group rather than individual user assignments.
-
-![Finance NTFS permissions](screenshots/incidents/INC-005-file-permissions/03-finance-ntfs-permissions.png)
-
-After restoring the AD group membership and establishing a fresh user logon session, access to `\\DC01\Finance` succeeded again.
-
-![Finance access restored](screenshots/incidents/INC-005-file-permissions/04-finance-access-restored.png)
-
-**Root cause:** the user's security token lacked the `GG-Finance` group required by the Finance folder's NTFS ACL.  
-**Resolution:** restore the AD group membership and sign out/in to obtain a new logon token.  
-**Verification:** confirm the user can successfully access the original Finance share.  
-**Automation opportunity:** correlate AD membership, current token groups, SMB share permissions, and NTFS ACLs to identify authorization gaps without automatically changing access.
+**Root cause:** the user lacked the required AD security-group membership.  
+**Resolution:** restore `GG-Finance` membership, establish a fresh logon session, and verify access to `\\DC01\Finance`.  
+**Automation:** `Get-FileAccessDiagnostic.ps1` + `Repair-FileAccessGroup.ps1`.
 
 Full case study: [`incidents/INC-005-file-permissions/README.md`](incidents/INC-005-file-permissions/README.md)
 
-## Project Roadmap
+## Phase 3 — PowerShell Diagnostics & Controlled Remediation ✅
+
+The manual troubleshooting paths were converted into eight reusable PowerShell tools.
+
+### Read-Only Diagnostics
+
+- [`Get-ADUserDiagnostic.ps1`](powershell/diagnostics/Get-ADUserDiagnostic.ps1) — account state, password state, timestamps, distinguished name, and group membership
+- [`Get-NetworkDiagnostics.ps1`](powershell/diagnostics/Get-NetworkDiagnostics.ps1) — IPv4, DHCP, APIPA, DNS, DC reachability, internal host lookup, and LDAP SRV discovery
+- [`Get-GPODiagnostic.ps1`](powershell/diagnostics/Get-GPODiagnostic.ps1) — expected GPO application and workstation OU placement
+- [`Get-FileAccessDiagnostic.ps1`](powershell/diagnostics/Get-FileAccessDiagnostic.ps1) — AD group membership, SMB share state, and NTFS authorization correlation
+
+### Controlled Remediation
+
+- [`Unlock-ADUserSafe.ps1`](powershell/remediation/Unlock-ADUserSafe.ps1) — validates account state, requires explicit approval, unlocks, and verifies
+- [`Repair-NetworkClient.ps1`](powershell/remediation/Repair-NetworkClient.ps1) — controlled DNS correction and DHCP renewal with post-change validation
+- [`Repair-GPOComputerScope.ps1`](powershell/remediation/Repair-GPOComputerScope.ps1) — confirms and restores a computer object to the expected workstation OU
+- [`Repair-FileAccessGroup.ps1`](powershell/remediation/Repair-FileAccessGroup.ps1) — restores approved group-based access and reminds the technician to refresh the user's security token
+
+### Safety Model
+
+The remediation scripts deliberately avoid broad automatic repair. They follow a narrow change-control pattern:
+
+1. inspect the current state
+2. stop if no change is required
+3. show the technician what will be changed
+4. require explicit `YES` confirmation
+5. apply only the supported remediation
+6. re-query the environment and report the result
+
+Detailed script documentation: [`powershell/README.md`](powershell/README.md)
+
+Execution evidence: [`screenshots/README.md`](screenshots/README.md)
+
+## Phase 4 — Ticket-Style Reporting / Knowledge Base ✅
+
+The five incident case studies use a consistent documentation model so another technician can understand what happened without repeating the investigation from scratch.
+
+The reusable workflow captures:
+
+- ticket summary and affected user / system
+- business impact and reported symptom
+- environment and dependencies
+- investigation sequence
+- root cause
+- exact resolution
+- technical and end-user verification
+- automation / prevention opportunity
+
+Reusable template: [`documentation/TICKET-TEMPLATE.md`](documentation/TICKET-TEMPLATE.md)
+
+Incident index: [`incidents/README.md`](incidents/README.md)
+
+## Evidence
+
+The repository contains visual evidence for the infrastructure baseline, all five incident simulations, and the PowerShell diagnostic / remediation phase.
+
+- Phase 1 configuration evidence: `screenshots/`
+- Incident evidence: `screenshots/incidents/`
+- PowerShell evidence: `screenshots/powershell/`
+- Full evidence index: [`screenshots/README.md`](screenshots/README.md)
+
+## Repository Structure
+
+```text
+msp-windows-infrastructure-lab/
+├── architecture/
+│   └── README.md
+├── documentation/
+│   ├── phase-1-build.md
+│   └── TICKET-TEMPLATE.md
+├── incidents/
+│   ├── README.md
+│   ├── INC-001-account-lockout/
+│   ├── INC-002-dns-failure/
+│   ├── INC-003-dhcp-apipa/
+│   ├── INC-004-gpo-failure/
+│   └── INC-005-file-permissions/
+├── powershell/
+│   ├── README.md
+│   ├── diagnostics/
+│   │   ├── Get-ADUserDiagnostic.ps1
+│   │   ├── Get-NetworkDiagnostics.ps1
+│   │   ├── Get-GPODiagnostic.ps1
+│   │   └── Get-FileAccessDiagnostic.ps1
+│   └── remediation/
+│       ├── Unlock-ADUserSafe.ps1
+│       ├── Repair-NetworkClient.ps1
+│       ├── Repair-GPOComputerScope.ps1
+│       └── Repair-FileAccessGroup.ps1
+└── screenshots/
+    ├── README.md
+    ├── incident evidence
+    └── powershell/
+```
+
+## Completed Project Roadmap
 
 1. **Infrastructure Baseline** — ✅ Complete
 2. **INC-001: AD Account Lockout** — ✅ Complete
 3. **INC-002: DNS / Name Resolution Failure** — ✅ Complete
 4. **INC-003: DHCP Failure / APIPA** — ✅ Complete
 5. **INC-004: Group Policy Failure** — ✅ Complete
-6. **INC-005: File-Share / Permission Issue** — ✅ Complete
-7. **PowerShell Diagnostics** — Next
-8. **Controlled Remediation** — Planned
-9. **Ticket-Style Reporting / Knowledge Base** — Planned
+6. **INC-005: File Share / Permission Failure** — ✅ Complete
+7. **PowerShell Diagnostics** — ✅ Complete
+8. **Controlled Remediation** — ✅ Complete
+9. **Ticket-Style Reporting / Knowledge Base** — ✅ Complete
 
-## Repository Structure
+## Skills Demonstrated
 
-```text
-msp-windows-infrastructure-lab/
-├── architecture/        # network and infrastructure diagrams
-├── documentation/       # build notes and technical explanations
-├── incidents/           # one README case study per incident
-├── powershell/          # future diagnostics and remediation automation
-└── screenshots/
-    ├── phase-1 evidence
-    └── incidents/       # visual evidence grouped by incident ID
-```
-
-Incident documentation and screenshot evidence are deliberately separated: `incidents/` explains the troubleshooting process, while `screenshots/incidents/` stores the visual evidence referenced by each case study.
+- Windows Server administration
+- Active Directory Domain Services
+- user and group administration
+- Group Policy troubleshooting
+- DNS and DHCP troubleshooting
+- TCP/IP and Windows client networking
+- SMB shares and NTFS permissions
+- root-cause analysis
+- structured incident troubleshooting
+- PowerShell diagnostics
+- controlled remediation and validation
+- technical documentation and knowledge-base writing
+- support workflows designed for repeatability and handoff
 
 ## Documentation Philosophy
 
-Every incident follows the same operational pattern:
+The project separates installation evidence, incident case studies, source code, and execution evidence so each layer can be reviewed independently.
 
-**Problem → Symptoms → Investigation → Root Cause → Resolution → Verification → Automation Opportunity**
-
-This keeps the repository focused on support engineering, root-cause analysis, and repeatable troubleshooting rather than documenting every installation click.
+The core principle is simple: **understand the failure manually first, automate only the repeatable part, and always verify the result.**
 
 ## Security
 
-This repository contains only isolated lab configuration and sanitized evidence. Passwords, product keys, tokens, personal information, and unrelated host-system information are never committed.
+This repository contains only isolated lab configuration and sanitized evidence. Passwords, product keys, tokens, personal information, and unrelated host-system information are not intentionally committed.
